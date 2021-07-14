@@ -1,3 +1,62 @@
+const express = require('express'); //모듈을 로드
+const app = express(); //express 호출허여, app 객체에 담음
+const port = 3000;
+var fs = require('fs');
+var path = require('path');
+var template = require('./lib/template.js');
+var sanitizeHtml = require('sanitize-html');
+
+
+//get 메소드는 라우트, 라우팅이라고 함.
+app.get('/', (request, response) => { //app get 첫번째 경로, 두번째 콜백
+  fs.readdir('./data', function (error, filelist) {
+    var title = 'Welcome';
+    var description = 'Hello, Node.js';
+    var list = template.list(filelist);
+    var html = template.HTML(title, list,
+      `<h2>${title}</h2>${description}`,
+      `<a href="/create">create</a>`
+    );
+
+    //response.writeHead(200);
+    //response.end(html);
+
+    response.send(html);
+  });
+});
+
+app.get('/page/:pageId', (request, response) => { //app get 첫번째 경로, 두번째 콜백
+
+  fs.readdir('./data', function (error, filelist) {
+    var filteredId = path.parse(request.params.pageId).base;
+    fs.readFile(`data/${filteredId}`, 'utf8', function (err, description) {
+      var title = request.params.pageId;
+      var sanitizedTitle = sanitizeHtml(title);
+      var sanitizedDescription = sanitizeHtml(description, {
+        allowedTags: ['h1']
+      });
+      var list = template.list(filelist);
+      var html = template.HTML(sanitizedTitle, list,
+        `<h2>${sanitizedTitle}</h2>${sanitizedDescription}`,
+        ` <a href="/create">create</a>
+          <a href="/update?id=${sanitizedTitle}">update</a>
+          <form action="delete_process" method="post">
+            <input type="hidden" name="id" value="${sanitizedTitle}">
+            <input type="submit" value="delete">
+          </form>`
+      );
+      response.send(html);
+    });
+  });
+});
+
+
+app.listen(port, () => { //listen 메소드가 실행될 때 웹서버가 시작이되며 인자로 받은 port 값으로 웹서버를 만듦.
+  console.log(`Example app listening at http://localhost:${port}`);
+});
+
+
+/*
 var http = require('http');
 var fs = require('fs');
 var url = require('url');
@@ -141,3 +200,4 @@ var app = http.createServer(function(request,response){
     }
 });
 app.listen(3000);
+*/

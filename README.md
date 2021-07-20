@@ -82,3 +82,91 @@ URL PATH 방식으로 변경.
 시맨틱 URL로 변경 후 template,js도 수정해줘야함.
 
 ---
+
+## Chap 6
+
+### 페이지 생성 구현
+
+get 방식일 때 : `app.get('path', () => {});`
+
+post 방식 일 때 : `app.post('path', () => {});`
+
+---
+
+## Chap 7
+
+### 페이지 수정 구현
+
+동일
+
+---
+
+## Chap 8
+
+### 페이지 삭제 구현
+
+동일
+
+Express : 라우트 기능이 대부분이다.
+
+어떻게 라우트 하는지. Path 별로 어떻게 응답하는가? Get 방식 Post 방식으로 접근했을 때 어떻게 구분해서 응답하는가?
+
+Web Framework을 다룰 때 제일 먼저 살펴봐야할 것들.
+
+---
+
+## Chap 9
+
+### 미들웨어의 사용 - body parser
+
+Express에서 라우트와 양대산맥으로 중요한 것이 미들웨어
+
+Third-party Middleware - 남들이 만든 미들웨어(Express가 만든 것이 아닌)
+- Body Parser
+
+`npm install body-parser --save`
+
+body : 웹 브라우저에서 요청한 정보의 본체를 body라고 함. 그 본체를 설명하는 것이 header
+
+parser : 분석
+
+바디 파서 사용시 선언 필수 
+``` js
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }))
+
+// parse application/json
+app.use(bodyParser.json())
+```
+
+``` js
+  var body = '';
+  request.on('data', function (data) {
+    body = body + data;
+  });
+  request.on('end', function () {
+    var post = qs.parse(body);
+    var title = post.title;
+    var description = post.description;
+    fs.writeFile(`data/${title}`, description, 'utf8', function (err) {
+      //response.writeHead(302, { Location: `/?id=${title}` });
+      //response.end();
+      response.redirect(`page/${title}`);
+    })
+  });
+```
+위 코드를 body-parser를 사용하면
+
+``` js
+  var post = request.body;
+  var title = post.title;
+  var description = post.description;
+  fs.writeFile(`data/${title}`, description, 'utf8', function (err) {
+    //response.writeHead(302, { Location: `/?id=${title}` });
+    //response.end();
+    response.redirect(`page/${title}`);
+  });
+```
+이렇게 줄 일 수 있다.
+
+---

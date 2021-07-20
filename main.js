@@ -3,9 +3,15 @@ const app = express(); //express 호출허여, app 객체에 담음
 const port = 3000;
 var fs = require('fs');
 var path = require('path');
+var qs = require('querystring');
 var template = require('./lib/template.js');
 var sanitizeHtml = require('sanitize-html');
+var bodyParser = require('body-parser');
+const { request, response } = require('express');
 
+
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }))
 
 //get 메소드는 라우트, 라우팅이라고 함.
 app.get('/', (request, response) => { //app get 첫번째 경로, 두번째 콜백
@@ -39,8 +45,8 @@ app.get('/page/:pageId', (request, response) => { //app get 첫번째 경로, �
       var html = template.HTML(sanitizedTitle, list,
         `<h2>${sanitizedTitle}</h2>${sanitizedDescription}`,
         ` <a href="/create">create</a>
-          <a href="/update?id=${sanitizedTitle}">update</a>
-          <form action="delete_process" method="post">
+          <a href="/update/${sanitizedTitle}">update</a>
+          <form action="/delete_process" method="post">
             <input type="hidden" name="id" value="${sanitizedTitle}">
             <input type="submit" value="delete">
           </form>`
@@ -50,6 +56,141 @@ app.get('/page/:pageId', (request, response) => { //app get 첫번째 경로, �
   });
 });
 
+app.get('/create', (request, response) => {
+  fs.readdir('./data', function (error, filelist) {
+    var title = 'WEB - create';
+    var list = template.list(filelist);
+    var html = template.HTML(title, list, `
+      <form action="/create_process" method="post">
+        <p><input type="text" name="title" placeholder="title"></p>
+        <p>
+          <textarea name="description" placeholder="description"></textarea>
+        </p>
+        <p>
+          <input type="submit">
+        </p>
+      </form>
+    `, '');
+    response.send(html);
+  });
+});
+
+app.post('/create_process', (request, response) => {
+
+  /*
+  var body = '';
+  request.on('data', function (data) {
+    body = body + data;
+  });
+  request.on('end', function () {
+    var post = qs.parse(body);
+    var title = post.title;
+    var description = post.description;
+    fs.writeFile(`data/${title}`, description, 'utf8', function (err) {
+      //response.writeHead(302, { Location: `/?id=${title}` });
+      //response.end();
+      response.redirect(`page/${title}`);
+    })
+  });
+  */
+
+  var post = request.body;
+  var title = post.title;
+  var description = post.description;
+  fs.writeFile(`data/${title}`, description, 'utf8', function (err) {
+    //response.writeHead(302, { Location: `/?id=${title}` });
+    //response.end();
+    response.redirect(`page/${title}`);
+  });
+
+});
+
+app.get('/update/:pageId', (request, response) => {
+  fs.readdir('./data', function (error, filelist) {
+    var filteredId = path.parse(request.params.pageId).base;
+    fs.readFile(`data/${filteredId}`, 'utf8', function (err, description) {
+      var title = request.params.pageId;
+      var list = template.list(filelist);
+      var html = template.HTML(title, list,
+        `
+        <form action="/update_process" method="post">
+          <input type="hidden" name="id" value="${title}">
+          <p><input type="text" name="title" placeholder="title" value="${title}"></p>
+          <p>
+            <textarea name="description" placeholder="description">${description}</textarea>
+          </p>
+          <p>
+            <input type="submit">
+          </p>
+        </form>
+        `,
+        `<a href="/create">create</a> <a href="/update?id=${title}">update</a>`
+      );
+      response.send(html);
+    });
+  });
+});
+
+app.post('/update_process', (request, response) => {
+  /*
+  var body = '';
+  request.on('data', function(data){
+      body = body + data;
+  });
+  request.on('end', function(){
+      var post = qs.parse(body);
+      var id = post.id;
+      var title = post.title;
+      var description = post.description;
+      fs.rename(`data/${id}`, `data/${title}`, function(error){
+        fs.writeFile(`data/${title}`, description, 'utf8', function(err){
+          //response.writeHead(302, {Location: `/?id=${title}`});
+          //response.end();
+          response.redirect(`/page/${title}`);
+        })
+      });
+  });
+  */
+  var post = request.body;
+  var id = post.id;
+  var title = post.title;
+  var description = post.description;
+  fs.rename(`data/${id}`, `data/${title}`, function (error) {
+    fs.writeFile(`data/${title}`, description, 'utf8', function (err) {
+      //response.writeHead(302, {Location: `/?id=${title}`});
+      //response.end();
+      response.redirect(`/page/${title}`);
+    })
+  });
+});
+
+app.post('/delete_process', (request, response) => {
+  /*
+   var body = '';
+       request.on('data', function(data){
+           body = body + data;
+       });
+       request.on('end', function(){
+           var post = qs.parse(body);
+           var id = post.id;
+           var filteredId = path.parse(id).base;
+           fs.unlink(`data/${filteredId}`, function(error){
+             //response.writeHead(302, {Location: `/`});
+             //response.end();
+             response.redirect('/');
+           })
+       });
+ */
+
+  var post = request.body;
+  var id = post.id;
+  var filteredId = path.parse(id).base;
+  fs.unlink(`data/${filteredId}`, function (error) {
+    //response.writeHead(302, {Location: `/`});
+    //response.end();
+    response.redirect('/');
+  })
+});
 
 app.listen(port, () => { //listen 메소드가 실행될 때 웹서버가 시작이되며 인자로 받은 port 값으로 웹서버를 만듦.
   console.log(`Example app listening at http://localhost:${port}`);

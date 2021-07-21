@@ -7,18 +7,27 @@ var qs = require('querystring');
 var template = require('./lib/template.js');
 var sanitizeHtml = require('sanitize-html');
 var bodyParser = require('body-parser');
+var compression = require('compression')
 const { request, response } = require('express');
 
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }))
 
+app.use(compression());
+
+app.get('*', (request, response, next) => {
+  fs.readdir('./data', function (error, filelist) {
+    request.list = filelist;
+    next(); //next 변수에는 그 다음에 호출되어야 할 미들웨어가 담겨있음.
+  });
+})
+
 //get 메소드는 라우트, 라우팅이라고 함.
 app.get('/', (request, response) => { //app get 첫번째 경로, 두번째 콜백
-  fs.readdir('./data', function (error, filelist) {
     var title = 'Welcome';
     var description = 'Hello, Node.js';
-    var list = template.list(filelist);
+    var list = template.list(request.list);
     var html = template.HTML(title, list,
       `<h2>${title}</h2>${description}`,
       `<a href="/create">create</a>`
@@ -28,7 +37,7 @@ app.get('/', (request, response) => { //app get 첫번째 경로, 두번째 콜�
     //response.end(html);
 
     response.send(html);
-  });
+ㅅ
 });
 
 app.get('/page/:pageId', (request, response) => { //app get 첫번째 경로, 두번째 콜백
@@ -57,9 +66,9 @@ app.get('/page/:pageId', (request, response) => { //app get 첫번째 경로, �
 });
 
 app.get('/create', (request, response) => {
-  fs.readdir('./data', function (error, filelist) {
+
     var title = 'WEB - create';
-    var list = template.list(filelist);
+    var list = template.list(request.list);
     var html = template.HTML(title, list, `
       <form action="/create_process" method="post">
         <p><input type="text" name="title" placeholder="title"></p>
@@ -72,7 +81,7 @@ app.get('/create', (request, response) => {
       </form>
     `, '');
     response.send(html);
-  });
+
 });
 
 app.post('/create_process', (request, response) => {
@@ -110,7 +119,7 @@ app.get('/update/:pageId', (request, response) => {
     var filteredId = path.parse(request.params.pageId).base;
     fs.readFile(`data/${filteredId}`, 'utf8', function (err, description) {
       var title = request.params.pageId;
-      var list = template.list(filelist);
+      var list = template.list(request.list);
       var html = template.HTML(title, list,
         `
         <form action="/update_process" method="post">

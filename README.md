@@ -169,4 +169,65 @@ app.use(bodyParser.json())
 ```
 이렇게 줄 일 수 있다.
 
+### 미들웨어의 사용 - Compression
+
+데이터가 큰 편이라면? 돈도 많이 들고 시간도 많이 든다.
+
+이것을 암축을 통해서 해결할 수 있다.
+
+`npm install compression`
+
+`app.use(compression());` 미들웨어를 사용하기 위한 약속
+
+
+## Chap 10
+
+### 미들웨어 만들기
+
+Express에서 미들웨어라고 하는 것은
+
+``` js
+var myLogger = function (req, res, next) {
+  console.log('LOGGED')
+  next()
+}
+
+app.use(myLogger)
+```
+
+myLogger 같은 형식을 가지고 있는 함수를 미들웨어라고 함.
+
+**readdir 부분 미들웨어 정의하기**
+
+``` js
+app.use((request, response, next) => {
+  fs.readdir('./data', function (error, filelist) {
+    request.list = filelist;
+    next(); //next 변수에는 그 다음에 호출되어야 할 미들웨어가 담겨있음.
+  });
+})
+```
+request.list를 통해서 readdir을 대체
+
+create_process / update_process / delete_process 에서 글 목록을 읽어올 필요가 있을까?
+
+불필요한 비효율이 발생하고 있다는 것.
+
+``` js
+app.get('*', (request, response, next) => {
+  fs.readdir('./data', function (error, filelist) {
+    request.list = filelist;
+    next(); //next 변수에는 그 다음에 호출되어야 할 미들웨어가 담겨있음.
+  });
+})
+```
+
+인자로 `*`은 모든 요청이라는 뜻임.
+
+get 방식에 대한 요청에만 파일 목록을 가져오는 코드가 되는 것.
+
+그래서 post 방식을 사용하는 create_process / update_process / delete_process에서는 request로 list를 받지 않는다.
+
+우리가 알게 된 사실 : `app.get()`에서 사실 두번째 인자로 사용되었던 콜백은 사실 미들웨어였다.
+
 ---
